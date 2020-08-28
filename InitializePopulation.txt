@@ -1,0 +1,959 @@
+$POPULATION=array();
+array_push($POPULATION,"orange","apple");
+echo "<pre>";
+print_r($POPULATION);
+echo "</pre>";
+$POPULATION["abcd"]=array("new1",-3);
+$POPULATION["slotid"]=array("tid"=>"teacherid","classid"=>"classid","subject"=>"subjectid");
+array_push($POPULATION, array("new2",-6));
+array_push($POPULATION, array("new3",-1));
+echo "<pre>";
+print_r($POPULATION);
+echo "</pre>";
+       ?>
+
+
+
+
+
+
+
+
+
+constraints:
+class availibility		join3
+teacher availability	join2
+clashes					timetable
+
+teacher->subject->classroom
+
+same slot --> teacherid, classroomid always different
+
+
+															
+															superadmin defines roles of admin.... subject load add
+
+https://stackoverflow.com/questions/33097557/how-to-retrieve-random-elements-from-php-array-excluding-specific-elements
+
+
+
+
+array of teacher overall weekly load with key as teacher id and value as weekly theoryload/labload 
+array of teacher overall weekly load with key as teacher id and value as weekly theoryload/labload initialised to zero
+array of daily load with keys as teacher id and value as [weekly theoryload(or)labload]/[number of days institute is open]
+array of subjectids
+array of class ids
+k={1,2,3};
+
+for( number of days institue is operational in a week )
+{
+array of teacherload with keys as teacherid and value as currentload initialised to zero
+
+	for( lecture start time to lecture end time )
+	{
+	p=random value from k;
+	segregate teachers available in the current slot in an array(normal array)
+	while(p)
+		{
+		Teacher selection:
+		{
+			select and store a random teacher id
+		}
+
+			if( selected teacher available in array of currently available teachers && currentload<dailyload)
+			{
+				remove teacherid from the array
+				sql query for listing subjects taught by teacher selected	
+				randomly select a subject from the list
+				sql query for listing classrooms of the same type as the selected subject in an array
+				Classrooms selection:
+				{
+				randomly select one classroom
+				}
+
+				if( selected classroom available in array of currently available classrooms)
+				{
+					remove classrom from the array
+					insert slotid, teacherid,subjectid and class id in timetable database.
+					+1 in corresponding daily load
+					+1 in correspomding weekly load
+					goto: Teacher selection
+				}	
+				else goto: Classroom selection
+			}
+			else goto: Teacher selection
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Assign weigths to every teacher subject classroom and make an array containing that many elements per parameter before selecting randomly.
+
+
+
+
+using genetic algorithm. 
+Chromosome : <slot,teacher,subject,classroom>
+Genes:a)slot
+	  b)teacher
+	  c)subject
+	  d)classroom
+
+create the initial population using different combination of genes.
+assign fitness score
+evaluation function is inverse of conflict for teachers which defines the fitness of the gene
+start crossovers to maximize the fitnessof the genes
+end when maximum fitness is reached
+
+
+
+START
+Generate the initial population
+Compute fitness
+REPEAT
+    Selection
+    Crossover
+    Mutation
+    Compute fitness
+UNTIL population has converged
+STOP
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class Database
+{
+    private static $con;
+
+    public static function getObject()
+    {
+        if (!self::$con)
+            self::$con = new mysqli("localhost", "root", "aressam1999", "instmgtsys");
+
+        return self::$con;
+    }
+}
+
+/*
+public static function generateIndividual($slot)
+{
+	$teacher_array=array();
+	$q2="SELECT * FROM teacher,teacher_time WHERE teacher_time.slot='$slot'";
+	$res2 = mysqli_query (Database::$con,$q2);
+	while($row2=mysqli_fetch_array($res2))
+	{
+		// $teacher_array[]=$row2;
+		echo "ok";
+	}
+}
+
+//main start of program*/
+$indiv_array=array(array());
+
+$q="SELECT * FROM slot";
+$res = mysqli_query(Database::$con, $q);
+while($row=mysqli_fetch_array($res))
+{
+	echo "ok2 <br>";
+	generateIndividual($row['slot']);
+	echo "ok3 <br>";
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+..................................................................................................................................
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<?php
+	//class for database connection
+	$POPULATION_SIZE=200;
+	$POPULATION=array(array());
+	$GEN_COUNT = 1;
+	for($i=1;$i<=$POPULATION_SIZE;$i++)
+	{
+		generateIndividual();
+	}
+	function db () 
+	{
+	    static $con;
+	    if ($con===NULL)
+	    { 
+	        $con = mysqli_connect ("localhost", "root", "aressam1999", "instmgtsys");
+	    }
+	    return $con;
+	}
+
+	//population initialisation function
+	function generateIndividual()
+	{
+		$con=db();
+		global $POPULATION
+		initialisation:
+		{
+			$slot_array=array();
+			$teacher_array=array();
+			$subject_array=array(array());
+			$class_array=array();
+		}
+
+		slot_selection:
+		{
+			$slot_q = "SELECT * FROM slot";
+			$slot_res = mysqli_query($con, $slot_q) or die("error2");
+			$slot_array=array();
+			while($row1=mysqli_fetch_array($slot_res))
+				$slot_array[$row1['slotid']]=$row1['slot'];
+			$slot_random_index=array_rand($slot_array);
+		}
+
+		teacher_selection:
+		{
+			$teacher_q="SELECT * FROM teacher";
+			$teacher_res = mysqli_query($con, $teacher_q) or die("error2");
+			$teacher_array=array();
+			while($row2=mysqli_fetch_array($teacher_res))
+				$teacher_array[$row2['tid']]=$row2['tname'];
+			$teacher_random_index=array_rand($teacher_array);
+		}
+
+		subject_selection:
+		{	
+			$subject_q="SELECT * FROM subject";
+			$subject_res = mysqli_query($con, $subject_q) or die("error2");
+			$subject_array=array();
+			while($row3=mysqli_fetch_array($subject_res))
+				$subject_array[$row3['slotid']]=$row3['slot'];
+			$subject_random_index=array_rand($subject_array);
+		}
+
+		class_selection:
+		{
+			$class_q="SELECT * FROM class";
+			$class_res = mysqli_query($con, $class_q) or die("error2");
+			$class_array=array();
+			while($row4=mysqli_fetch_array($class_res))
+				$class_array[$row4['classid']]=$row4['class'];
+			$class_random_index=array_rand($class_array);
+		}
+
+
+	}
+
+?>
+
+
+
+
+<?php
+$POPULATION = array(); //population of individuals
+$POPULATION_SIZE = 200;
+// $DNA_SIZE = 12;
+// $GEN_COUNT = 1;
+// $TEST_COUNT = 0;
+genInitPopulation();
+
+echo "<pre>";
+print_r($POPULATION);
+echo "</pre><br>";
+
+/*while (true) {
+    naturalSelection();
+    recreatePopulation();
+}
+*/
+//========================== FUNCTIONS ============================
+
+/*function mutate($s) {
+    global $DNA_SIZE;
+    $sample = randomIndividual();
+    for ($i=0; $i<$DNA_SIZE; $i++) {
+        if (rand(0,100) == 100) {
+            $s[$i] = $sample[$i];
+        }
+    }
+    return $s;
+}
+function reproduction($ia, $ib)
+{
+    global $DNA_SIZE;
+    $crosspoint   = rand(0, $DNA_SIZE-1);
+    $ia_before_cp = substr($ia, 0, $crosspoint);
+    //$ia_after_cp  = substr($ia[0], $crosspoint);
+    //$ib_before_cp = substr($ib[0], 0, $crosspoint);
+    $ib_after_cp  = substr($ib, $crosspoint);
+    $child = $ia_before_cp.$ib_after_cp;
+    $child = mutate($child);
+    return array($child, fitness($child));
+}
+function recreatePopulation()
+{
+    global $POPULATION, $POPULATION_SIZE, $GEN_COUNT;
+    //echo '* Recreating population by reproducing randomly...'."\n";
+    $GEN_COUNT++;
+    $c = count($POPULATION);
+    for ($i=$c; $i<$POPULATION_SIZE; $i++) {
+        $a = rand(0, $c-1);
+        $b = rand(0, $c-1);
+        array_push($POPULATION, reproduction($POPULATION[$a][0], $POPULATION[$b][0]));
+    }
+}
+function naturalSelection()
+{
+    global $POPULATION, $POPULATION_SIZE, $GEN_COUNT;
+    //echo '* Natural selection...'."\n";
+    usort($POPULATION, "cmp");
+    array_splice($POPULATION, ceil($POPULATION_SIZE/2));
+    echo 'Best fit gen '.$GEN_COUNT.': '.$POPULATION[0][0].' ('.$POPULATION[0][1].')'."<br>";
+}
+function cmp($a, $b)
+{
+    if ($a[1] == $b[1]) return 0;
+    return ($a[1] > $b[1]) ? -1 : 1;
+}*/
+function genInitPopulation()
+{
+    global $POPULATION, $POPULATION_SIZE;
+    //echo '* Generating inital population...'."\n";
+    for($i=0; $i<$POPULATION_SIZE; $i++) {
+        $individual = randomIndividual();
+        array_push($POPULATION, array($individual,fitness($individual)));
+        //$POPULATION["slotid"]=array("tid"=>"teacherid","classid"=>"classid","subject"=>"subjectid");
+    }
+}
+function randomIndividual()
+{
+    $individual = '';
+    $con=db();
+		global $POPULATION
+
+		arrayinitialisation:
+		{
+			$slot_array=array();
+			$teacher_array=array();
+			$subject_array=array(array());
+			$class_array=array();
+		}
+
+		slot_selection:
+		{
+			$slot_q = "SELECT * FROM slot";
+			$slot_res = mysqli_query($con, $slot_q) or die("error2");
+			$slot_array=array();
+			while($row1=mysqli_fetch_array($slot_res))
+				$slot_array[$row1['slotid']]=$row1['slot'];
+			$slot_random_index=array_rand($slot_array);
+		}
+
+		teacher_selection:
+		{
+			$teacher_q="SELECT * FROM teacher";
+			$teacher_res = mysqli_query($con, $teacher_q) or die("error2");
+			$teacher_array=array();
+			while($row2=mysqli_fetch_array($teacher_res))
+				$teacher_array[$row2['tid']]=$row2['tname'];
+			$teacher_random_index=array_rand($teacher_array);
+		}
+
+		subject_selection:
+		{	
+			$subject_q="SELECT * FROM subject";
+			$subject_res = mysqli_query($con, $subject_q) or die("error2");
+			$subject_array=array();
+			while($row3=mysqli_fetch_array($subject_res))
+				$subject_array[$row3['slotid']]=$row3['slot'];
+			$subject_random_index=array_rand($subject_array);
+		}
+
+		class_selection:
+		{
+			$class_q="SELECT * FROM class";
+			$class_res = mysqli_query($con, $class_q) or die("error2");
+			$class_array=array();
+			while($row4=mysqli_fetch_array($class_res))
+				$class_array[$row4['classid']]=$row4['class'];
+			$class_random_index=array_rand($class_array);
+		}
+    // $POPULATION["slotid"]=array("tid"=>"teacherid","classid"=>"classid","subject"=>"subjectid");
+    return $individual;
+}
+function fitness($individual)
+{
+    global $GEN_COUNT, $POPULATION_SIZE, $TEST_COUNT;
+    $TEST_COUNT++;
+    $goal = 'Hello World!';
+    $delta = 0;
+    for($i=0; $i<strlen($individual); $i++) {
+        $delta -= abs(ord($goal[$i]) - ord($individual[$i]));
+    }
+    if ($delta == 0) {
+        echo "<br>".'Solution found in '.$GEN_COUNT.' generation(s) of '.$POPULATION_SIZE.' individual(s)!'."\n";
+        echo '>>'.$individual."\n\n";
+        echo 'There was '.$TEST_COUNT.' tests performed'."\n";
+        echo 'Out of 54^12 possible combinations'."\n";
+        exit();
+    }
+    return $delta;
+}
+?>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<?php
+	//class for database connection
+	$POPULATION_SIZE=1000;
+	$POPULATION=array(array());
+	$GEN_COUNT = 1;
+	for($i=1;$i<=$POPULATION_SIZE;$i++)
+	{
+		generateIndividual();
+	}
+	function db () 
+	{
+	    static $con;
+	    if ($con===NULL)
+	    { 
+	        $con = mysqli_connect ("localhost", "root", "aressam1999", "instmgtsys");
+	    }
+	    return $con;
+	}
+
+	//population initialisation function
+	function generateIndividual()
+	{
+		$con=db();
+		global $POPULATION
+		initialisation:
+		{
+			$slot_array=array();
+			$teacher_array=array();
+			$subject_array=array(array());
+			$class_array=array();
+		}
+
+		slot_selection:
+		{
+			$slot_q = "SELECT * FROM slot";
+			$slot_res = mysqli_query($con, $slot_q) or die("error2");
+			$slot_array=array();
+			while($row1=mysqli_fetch_array($slot_res))
+				$slot_array[$row1['slotid']]=$row1['slot'];
+			$slot_random_index=array_rand($slot_array);
+		}
+
+		teacher_selection:
+		{
+			$teacher_q="SELECT * FROM teacher";
+			$teacher_res = mysqli_query($con, $teacher_q) or die("error2");
+			$teacher_array=array();
+			while($row2=mysqli_fetch_array($teacher_res))
+				$teacher_array[$row2['tid']]=$row2['tname'];
+			$teacher_random_index=array_rand($teacher_array);
+		}
+
+		subject_selection:
+		{	
+			$subject_q="SELECT * FROM subject";
+			$subject_res = mysqli_query($con, $subject_q) or die("error2");
+			$subject_array=array();
+			while($row3=mysqli_fetch_array($subject_res))
+				$subject_array[$row3['slotid']]=$row3['slot'];
+			$subject_random_index=array_rand($subject_array);
+		}
+
+		class_selection:
+		{
+			$class_q="SELECT * FROM class";
+			$class_res = mysqli_query($con, $class_q) or die("error2");
+			$class_array=array();
+			while($row4=mysqli_fetch_array($class_res))
+				$class_array[$row4['classid']]=$row4['class'];
+			$class_random_index=array_rand($class_array);
+		}
+
+
+	}
+
+?>
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*    $slot1=$temp1[0];
+    $teacher1=$temp1[1];
+    $subject1=$temp1[2];
+    $class1=$temp1[3];
+    $slot2=$temp2[0];
+    $teacher2=$temp2[1];
+    $subject2=$temp2[2];
+    $class2=$temp2[3];
+    \
+
+	$a="A1,1,2,3";
+$b="B1,2,3,13";
+$temp1=explode(",",$a);
+$temp2=explode(",",$b);
+print_r ($temp1);
+$n=rand(1,2);
+if($n==1)
+{
+  $random=rand(0,3);
+  $temp1[$random]=$temp2[$random];
+  echo "<br>1<br>";
+}
+else
+{
+  random0:
+  {
+      $random1=rand(0,3);
+      $random2=rand(0,3);
+    }
+  if($random1==$random2)
+      goto random0;
+  $temp1[$random1]=$temp2[$random1];
+  $temp1[$random2]=$temp2[$random2];
+ echo "<br>2<br>";
+}
+print_r ($temp1);
+$child=implode(",",$temp1);
+echo $child;
+?>
+
+    */
+
+
+
+
+
+
+
+
+    
+
+
+
+
+<?php
+echo "string123423";
+function db () 
+	{
+	    static $con;
+	    if ($con===NULL)
+	    { 
+	        $con = mysqli_connect ("localhost", "root", "aressam1999", "instmgtsys");
+	    }
+	    return $con;
+	}
+$con=db();
+$q="SELECT * FROM institute";
+$res=mysqli_query($con,$q);
+
+while($row=mysqli_fetch_array($res))
+{
+	$dataset_size=$row['days']*(date('H',strtotime($row['lecstrt']))-date('H',strtotime($row2['lecend'])))*($row['labclass']+$row['thclass']);
+}
+
+$POPULATION_SIZE=$dataset_size*2;
+$POPULATION = array();
+$slot_class_array=array();
+$slot_teacher_array=array();
+ //population of individuals
+// $DNA_SIZE = 12;
+// $GEN_COUNT = 1;
+// $TEST_COUNT = 0;
+genInitPopulation();
+
+echo "<pre>";
+print_r($POPULATION);
+echo "</pre><br>";
+
+/*while (true) {
+    naturalSelection();
+    recreatePopulation();
+}
+*/
+//========================== FUNCTIONS ============================
+
+/*function mutate($s) {
+    global $DNA_SIZE;
+    $sample = randomIndividual();
+    for ($i=0; $i<$DNA_SIZE; $i++) {
+        if (rand(0,100) == 100) {
+            $s[$i] = $sample[$i];
+        }
+    }
+    return $s;
+}
+function reproduction($ia, $ib)
+{
+    global $DNA_SIZE;
+    $crosspoint   = rand(0, $DNA_SIZE-1);
+    $ia_before_cp = substr($ia, 0, $crosspoint);
+    //$ia_after_cp  = substr($ia[0], $crosspoint);
+    //$ib_before_cp = substr($ib[0], 0, $crosspoint);
+    $ib_after_cp  = substr($ib, $crosspoint);
+    $child = $ia_before_cp.$ib_after_cp;
+    $child = mutate($child);
+    return array($child, fitness($child));
+}
+function recreatePopulation()
+{
+    global $POPULATION, $POPULATION_SIZE, $GEN_COUNT;
+    //echo '* Recreating population by reproducing randomly...'."\n";
+    $GEN_COUNT++;
+    $c = count($POPULATION);
+    for ($i=$c; $i<$POPULATION_SIZE; $i++) {
+        $a = rand(0, $c-1);
+        $b = rand(0, $c-1);+
+        array_push($POPULATION, reproduction($POPULATION[$a][0], $POPULATION[$b][0]));
+    }
+}
+function naturalSelection()
+{
+    global $POPULATION, $POPULATION_SIZE, $GEN_COUNT;
+    //echo '* Natural selection...'."\n";
+    usort($POPULATION, "cmp");
+    array_splice($POPULATION, ceil($POPULATION_SIZE/2));
+    echo 'Best fit gen '.$GEN_COUNT.': '.$POPULATION[0][0].' ('.$POPULATION[0][1].')'."<br>";
+}
+function cmp($a, $b)
+{
+    if ($a[1] == $b[1]) return 0;
+    return ($a[1] > $b[1]) ? -1 : 1;
+}*/
+function genInitPopulation()
+{
+    global $POPULATION, $POPULATION_SIZE;
+    //echo '* Generating inital population...'."\n";
+    for($i=0; $i<$POPULATION_SIZE; $i++) 
+    {
+        $individual = randomIndividual();
+        array_push($POPULATION, array($individual,fitness($individual)));
+    }
+}
+function randomIndividual()
+{
+	global $slot_class_array,$slot_teacher_array;
+    $individual = '';
+    $con=db();
+		global $POPULATION, $slot_class_array;
+
+		initial_array:
+		{
+			$slot_array=array();
+			$teacher_array=array();
+			$subject_array=array(array());
+			$class_array=array();
+		}
+
+		slot_selection:
+		{
+			$slot_q = "SELECT * FROM slot";
+			$slot_res = mysqli_query($con, $slot_q) or die("error2");
+			$slot_array=array();
+			while($row1=mysqli_fetch_array($slot_res))
+				$slot_array[$row1['slotid']]=$row1['slot'];
+			$slot_random_index=array_rand($slot_array);
+		}
+
+		teacher_selection:
+		{
+			$teacher_q="SELECT * FROM teacher";
+			$teacher_res = mysqli_query($con, $teacher_q) or die("error2");
+			$teacher_array=array();
+			while($row2=mysqli_fetch_array($teacher_res))
+				$teacher_array[$row2['tid']]=$row2['tname'];
+			$teacher_random_index=array_rand($teacher_array);
+		}
+
+		subject_selection:
+		{
+			$subject_q="SELECT * FROM subject";
+			$subject_res = mysqli_query($con, $subject_q) or die("error2");
+			$subject_array=array();
+			while($row3=mysqli_fetch_array($subject_res))
+				$subject_array[$row3['subjectid']]=$row3['subjectname'];
+			$subject_random_index=array_rand($subject_array);
+		}
+
+		class_selection:
+		{
+			$class_q="SELECT * FROM class";
+			$class_res = mysqli_query($con, $class_q) or die("error2");
+			$class_array=array();
+			while($row4=mysqli_fetch_array($class_res))
+				$class_array[$row4['classid']]=$row4['class'];
+			$class_random_index=array_rand($class_array);
+		}
+
+		//teacher-slot constraint... population cannot have the same (slot,teacher) pair twice
+		if (array_key_exists($slot_array[$slot_random_index],$slot_teacher_array))
+		{
+			if($slot_teacher_array[$slot_array[$slot_random_index]] == $teacher_random_index)
+			{
+				goto initial_array;
+			}
+		}
+		else
+		{
+			$slot_teacher_array[$slot_array[$slot_random_index]]=$teacher_random_index;	
+		}
+
+		//class-slot constraint... population cannot have the same (slot,class) pair twice
+		if (array_key_exists($slot_array[$slot_random_index],$slot_class_array))
+		{
+			if($slot_class_array[$slot_array[$slot_random_index]] == $class_random_index)
+			{
+				goto initial_array;
+			}
+		}
+		else
+		{
+			$slot_class_array[$slot_array[$slot_random_index]]=$class_random_index;
+		}
+
+		//individual in a population : comman seperated values of slot,teacherid,subjectid
+
+		$individual.=$slot_array[$slot_random_index].",".$teacher_random_index.",".$subject_random_index.",".$class_random_index;
+    // $POPULATION["slotid"]=array("tid"=>"teacherid","classid"=>"classid","subject"=>"subjectid");
+    
+    return $individual;
+}
+function fitness($individual)
+{
+    global $GEN_COUNT, $POPULATION_SIZE, $TEST_COUNT;
+    $TEST_COUNT++;
+    $delta = 0;
+    //is the subject taught by the teacher(1)class and subject type doesnot match(2) teacher is available in the slot(3)
+    
+    $temp=explode(",", $individual);
+    $slot=$temp[0];
+    $teacher=$temp[1];
+    $subject=$temp[2];
+    $class=$temp[3];
+
+    $teachersubject_check="SELECT * FROM teacher_subject WHERE tid=$teacher AND subid=$subject";
+    $teacherslot_check="SELECT * FROM teacher_time WHERE tid=$teacher AND slot=$slot";
+    $classsubject_check="SELECT * FROM class,subject WHERE class.classid=$class AND subjcet.subjectid=$subject AND class.type=subject.subtype";
+
+    $teachersubject_check_res=mysqli_query($con,$teachersubject_check);
+   	$teacherslot_check_res=mysqli_query($con,$teacherslot_check);
+   	$classsubject_check_res=mysqli_query($con,$classsubject_check);
+
+   	if(!mysqli_num_rows($teachersubject_check_res))
+   	{
+   		$delta-=5;
+   	}
+
+   	if(!mysqli_num_rows($teacherslot_check_res))
+   	{
+   		$delta-=3;
+   	}
+
+   	if(!mysqli_num_rows($classsubject_check_res))
+   	{
+   		$delta-=1;
+   	}
+
+    /*if ($delta == 0) {
+        echo "<br>".'Solution found in '.$GEN_COUNT.' generation(s) of '.$POPULATION_SIZE.' individual(s)!'."\n";
+        echo '>>'.$individual."\n\n";
+        echo 'There was '.$TEST_COUNT.' tests performed'."\n";
+        echo 'Out of 54^12 possible combinations'."\n";
+        exit();
+    }*/
+    return $delta;
+}
+
+//Try using cards... ASC timetable 
+// advantage: No need to check if teacher's load is fulfilled in final timetable, because cards are already made(contains teacherid,subjectid,classid), u have to just randomly select a slot
+
+//teacher_subject problem
+
+//aa gaye... shukariya... o mere meherbaan
+
+?>
+
+
+
+
+
+
+
+
+
+
+
+
+
+Give option for slot selection while allocating the subject:
+	constraints:	(Btech) cannot have more than one subject in a slot
+					One slot cannot have more than (number of classrooms) subjects
+					lab slot allocation will be done differently
+					
